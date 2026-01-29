@@ -14,6 +14,16 @@ import plotly.graph_objs as go
 import plotly.express as px
 import pandas as pd
 from functools import wraps
+import requests
+import base64
+from dotenv import load_dotenv
+from pycrucible import CrucibleClient
+from pycrucible.utils import get_tz_isoformat
+load_dotenv()
+cruc_client = CrucibleClient(
+    api_url="https://crucible.lbl.gov/testapi",
+    api_key = os.environ.get("crucible_apikey")
+)
 
 # Set up credentials
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.path.expanduser('~/.config/mf-crucible-9009d3780383.json')
@@ -38,6 +48,37 @@ orcid = oauth.register(
 bq_client = bigquery.Client(project='mf-crucible')
 
 PROJECT_ID = '10k_perovskites'
+
+def get_thumbnail_image_data(dataset_id):
+    """
+    Get the actual image data from cloud storage for embedding in HTML
+    """
+    try:
+        download_links = cruc_client.get_dataset_download_links(dataset_id)
+        print(f'{download_links=}')
+
+        download_url = [v for k,v in download_links.items() if k.endswith('.jpeg')][0]
+        print(f'{download_url=}')
+
+        if not download_url:
+            return None
+        
+        # Download the image
+        response = requests.get(download_url)
+        print(f'{response.content=}')
+        if response.status_code == 200:
+            # Convert to base64 for embedding in HTML
+            image_data = base64.b64encode(response.content).decode('utf-8')
+            
+            # Determine content type from file extension or response headers
+            content_type = response.headers.get('Content-Type', 'image/jpeg')
+            
+            return f"data:{content_type};base64,{image_data}"
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching thumbnail image: {e}")
+        return None
 
 
 def login_required(f):
@@ -235,6 +276,7 @@ def get_dashboard_data():
         d.dataset_name,
         d.source_folder,
         d.id as dataset_id,
+        d.unique_id as unique_id,
         DATE(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.date_created)) as sample_date,
         CASE WHEN DATE(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.date_created)) = CURRENT_DATE()
              THEN true ELSE false END as is_today
@@ -253,6 +295,14 @@ def get_dashboard_data():
     thumbnail_of_day_data = None
     if len(df_thumbnail_of_day) > 0:
         thumbnail_of_day_data = df_thumbnail_of_day.iloc[0].to_dict()
+        dataset_id = thumbnail_of_day_data['unique_id']
+        image_data = get_thumbnail_image_data(dataset_id)
+        
+        if image_data:
+            thumbnail_of_day_data['image_data'] = image_data
+        else:
+            # Fallback to showing source folder if image can't be retrieved
+            thumbnail_of_day_data['image_data'] = None
 
     return {
         'thin_films_count': int(thin_films_count),

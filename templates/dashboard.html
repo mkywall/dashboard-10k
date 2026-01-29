@@ -33,6 +33,13 @@
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+        .thumbnail-image {
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            object-fit: cover;
+            max-height: 300px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -309,16 +316,32 @@
                 const isToday = sample.is_today || false;
 
                 let imageHtml = '';
-                if (sample.file_to_upload) {
-                    // If there's an image path, we'd need to construct the full URL
-                    // For now, show a placeholder or the path info
+                
+                // Check if we have image_data from cloud storage
+                if (sample.image_data) {
+                    imageHtml = `
+                        <div class="mb-3">
+                            <img src="${sample.image_data}" 
+                                 alt="${sample.sample_name || 'Sample image'}" 
+                                 class="thumbnail-image shadow-md"
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22300%22 height=%22200%22/%3E%3Ctext fill=%22%239ca3af%22 font-family=%22Arial%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E';">
+                        </div>
+                    `;
+                } else if (sample.file_to_upload) {
+                    // Fallback if image_data is not available but file path exists
                     imageHtml = `
                         <div class="bg-gray-100 rounded-lg p-4 mb-3 text-sm text-gray-600">
-                            <p class="font-medium">Image available</p>
-                            <p class="text-xs mt-1 truncate" title="${sample.file_to_upload}">${sample.file_to_upload}</p>
+                            <div class="flex items-center mb-2">
+                                <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <p class="font-medium">Image available</p>
+                            </div>
+                            <p class="text-xs truncate" title="${sample.file_to_upload}">${sample.file_to_upload}</p>
                         </div>
                     `;
                 } else {
+                    // No image available
                     imageHtml = `
                         <div class="bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg h-48 mb-3 flex items-center justify-center">
                             <svg class="w-16 h-16 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +352,7 @@
                 }
 
                 const dateLabel = isToday ? 'Created Today' : 'Created';
-                const badgeHtml = isToday ? '' : '<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Recent</span>';
+                const badgeHtml = isToday ? '<span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">Today\'s Sample</span>' : '<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Recent</span>';
 
                 const detailsHtml = `
                     <div>
@@ -356,6 +379,11 @@
                                 <p class="text-sm text-gray-700">${sample.description}</p>
                             </div>
                             ` : ''}
+                            ${sample.dataset_name ? `
+                            <div class="pt-1">
+                                <p class="text-xs text-gray-400">Dataset: ${sample.dataset_name}</p>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -364,6 +392,9 @@
             } else {
                 document.getElementById('thumbnailOfDay').innerHTML = `
                     <div class="text-center text-gray-400 py-8">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
                         <p class="mb-2">No sample images available</p>
                         <p class="text-xs">Check back later!</p>
                     </div>
