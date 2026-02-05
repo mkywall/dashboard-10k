@@ -2,6 +2,12 @@
 
 A beautiful, modern Flask-based dashboard for visualizing and tracking the 10k Perovskites project data from BigQuery.
 
+
+## Cloud Deployment
+- Required environment variables are defined in the cloudbuild.yaml
+- Pushes to github trigger google cloud build of docker image and deployment to cloud run
+- Image stored in google cloud artifact registry
+
 ## Features
 
 - **Real-time Data**: Auto-refreshes every 30 seconds
