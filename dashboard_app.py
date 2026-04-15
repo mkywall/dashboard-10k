@@ -23,7 +23,7 @@ from pycrucible import CrucibleClient
 from pycrucible.utils import get_tz_isoformat
 load_dotenv()
 cruc_client = CrucibleClient(
-    api_url="https://crucible.lbl.gov/testapi",
+    api_url="https://crucible.lbl.gov/api/v1",
     api_key = os.environ.get("CRUCIBLE_API_KEY")
 )
 
@@ -205,17 +205,17 @@ def get_dashboard_data():
     WITH daily_counts AS (
         SELECT
             COALESCE(
-                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', date_created),
-                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%S', date_created)
+                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', timestamp),
+                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%S', timestamp)
             ) as timestamp,
             DATE(COALESCE(
-                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', date_created),
-                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%S', date_created)
+                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', timestamp),
+                SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%S', timestamp)
             )) as date
         FROM `mf-crucible.crucible.sample`
         WHERE project_id = '{PROJECT_ID}'
           AND sample_type = 'thin film'
-          AND date_created IS NOT NULL
+          AND timestamp IS NOT NULL
     ),
     daily_totals AS (
         SELECT
@@ -275,7 +275,7 @@ def get_dashboard_data():
         s.id as sample_id,
         s.sample_name,
         s.description,
-        s.date_created,
+        s.timestamp,
         s.owner_orcid,
         s.sample_type,
         d.file_to_upload,
@@ -283,8 +283,8 @@ def get_dashboard_data():
         d.source_folder,
         d.id as dataset_id,
         d.unique_id as unique_id,
-        DATE(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.date_created)) as sample_date,
-        CASE WHEN DATE(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.date_created)) = CURRENT_DATE()
+        DATE(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.timestamp)) as sample_date,
+        CASE WHEN DATE(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.timestamp)) = CURRENT_DATE()
              THEN true ELSE false END as is_today
     FROM `mf-crucible.crucible.sample` s
     JOIN `mf-crucible.crucible.datasetsamplelink` dsl ON s.id = dsl.sample_id
@@ -292,8 +292,8 @@ def get_dashboard_data():
     WHERE s.project_id = '{PROJECT_ID}'
       AND LOWER(d.measurement) LIKE '%sample well%'
       AND d.file_to_upload IS NOT NULL
-      AND s.date_created IS NOT NULL
-    ORDER BY PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.date_created) DESC
+      AND s.timestamp IS NOT NULL
+    ORDER BY PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%Ez', s.timestamp) DESC
     LIMIT 1
     """
     df_thumbnail_of_day = bq_client.query(query_thumbnail_of_day).to_dataframe()

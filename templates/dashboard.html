@@ -348,7 +348,7 @@
             // Thumbnail of the Day Widget
             if (data.thumbnail_of_day) {
                 const sample = data.thumbnail_of_day;
-                const dateStr = sample.date_created ? new Date(sample.date_created).toLocaleDateString() : 'Unknown';
+                const dateStr = sample.timestamp ? new Date(sample.timestamp).toLocaleDateString() : 'Unknown';
                 const isToday = sample.is_today || false;
 
                 let imageHtml = '';
