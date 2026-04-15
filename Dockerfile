@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install additional dependencies not in requirements.txt
-RUN pip install --no-cache-dir pycrucible python-dotenv
+RUN pip install --no-cache-dir git+https://github.com/MolecularFoundryCrucible/nano-crucible@dev python-dotenv
 
 # Copy application code
 COPY dashboard_app.py .

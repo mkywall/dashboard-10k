@@ -19,8 +19,7 @@ import requests
 import base64
 import json
 from dotenv import load_dotenv
-from pycrucible import CrucibleClient
-from pycrucible.utils import get_tz_isoformat
+from crucible import CrucibleClient
 load_dotenv()
 cruc_client = CrucibleClient(
     api_url="https://crucible.lbl.gov/api/v1",
